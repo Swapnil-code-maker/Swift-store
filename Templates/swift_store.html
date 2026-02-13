@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swift Store · VIT Bhopal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='swift_store.css') }}">
+</head>
+<body>
+    <!-- HEADER WITH GRADIENT TITLE -->
+    <header>
+        <div class="header-left">
+           <img src="https://similarpng.com/_next/image?url=https%3A%2F%2Fimage.similarpng.com%2Ffile%2Fsimilarpng%2Fvery-thumbnail%2F2021%2F09%2FOnline-shopping-logo-design-template-on-transparent-background-PNG.png&w=1080&q=75" height="50px" width="50px" alt="SwiftStore Logo" class="swiftstore-logo">
+            <div class="brand-wrapper">
+                <span class="brand-gradient">Swift Store</span>
+                <span class="delivery-tagline">Delivery in 10 minutes</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="theme-toggle" id="themeToggle">🌙 Dark</button>
+        </div>
+    </header>
+
+    <!-- LOCATION BAR -->
+    <div class="location-bar">
+        <div class="location-selector" id="locationSelector">
+            <span class="location-icon">📍</span>
+            <div class="location-text">
+                <span id="selectedLocationDisplay">Select Hostel & Room</span>
+                <span class="location-arrow">▼</span>
+            </div>
+        </div>
+        <button class="detect-btn" id="detectLocationBtn">Detect my location</button>
+    </div>
+
+    <!-- LOCATION MODAL -->
+    <div class="modal" id="locationModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Choose your delivery location</h3>
+                <span class="close-modal" id="closeModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="hostel-type">
+                    <div class="hostel-option">
+                        <input type="radio" name="hostelType" id="girlsHostel" value="girls">
+                        <label for="girlsHostel">Girls Hostel</label>
+                    </div>
+                    <div class="hostel-option">
+                        <input type="radio" name="hostelType" id="boysHostel" value="boys">
+                        <label for="boysHostel">Boys Hostel</label>
+                    </div>
+                </div>
+
+                <div id="girlsBlocks" class="block-section hidden">
+                    <p class="block-label">Select Block:</p>
+                    <div class="block-options">
+                        <button class="block-btn" data-block="Block 1">Block 1</button>
+                        <button class="block-btn" data-block="Block 2">Block 2</button>
+                        <button class="block-btn" data-block="Special Block">Special Block</button>
+                    </div>
+                </div>
+
+                <div id="boysBlocks" class="block-section hidden">
+                    <p class="block-label">Select Block:</p>
+                    <div class="block-options">
+                        <button class="block-btn" data-block="Block 1">Block 1</button>
+                        <button class="block-btn" data-block="Block 2">Block 2</button>
+                        <button class="block-btn" data-block="Block 3">Block 3</button>
+                        <button class="block-btn" data-block="Block 4">Block 4</button>
+                        <button class="block-btn" data-block="Block 5">Block 5</button>
+                        <button class="block-btn" data-block="Block 6">Block 6</button>
+                        <button class="block-btn" data-block="Block 7">Block 7</button>
+                        <button class="block-btn" data-block="Block 8">Block 8</button>
+                    </div>
+                </div>
+
+                <div id="roomDetails" class="room-section hidden">
+                    <div class="wing-input">
+                        <label for="wing">Wing:</label>
+                        <input type="text" id="wing" placeholder="A, B, C" maxlength="1">
+                    </div>
+                    <div class="room-input">
+                        <label for="roomNo">Room No.:</label>
+                        <input type="text" id="roomNo" placeholder="101, 202">
+                    </div>
+                    <button class="save-location-btn" id="saveLocation">Save & Continue</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SEARCH BAR -->
+    <div class="search-container">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search for chole bhature, body wash, brownie, noodles, notebook...">
+    </div>
+
+    <!-- THREE-COLUMN LAYOUT: SHOP | PRODUCTS | CART -->
+    <div class="three-column-layout">
+        
+        <!-- LEFT SIDEBAR - ALL STORES/CANTEENS -->
+        <aside class="shop-sidebar">
+            <h3 class="sidebar-title">All Stores</h3>
+            <ul class="store-list">
+                <li class="store-item active" data-store="all"> All Stores</li>
+                <li class="store-item" data-store="AB1 Stationery">AB1 Stationery</li>
+                <li class="store-item" data-store="Safal Mart">Safal Mart</li>
+                <li class="store-item" data-store="Old Mayuri">Old Mayuri</li>
+                <li class="store-item" data-store="UnderBelly Veg">UnderBelly Veg</li>
+                <li class="store-item" data-store="UnderBelly Non-Veg">UnderBelly Non-Veg</li>
+                <li class="store-item" data-store="New Mayuri">New Mayuri</li>
+                <li class="store-item" data-store="Bistro">Bistro</li>
+                <li class="store-item" data-store="AB's Dakshin">AB's Dakshin</li>
+            </ul>
+            
+            <div class="delivery-info">
+                <p class="delivery-guarantee">⚡ 10 MIN DELIVERY</p>
+                <p class="delivery-to" id="sidebarDeliveryLocation">📍 Select location</p>
+            </div>
+        </aside>
+
+        <!-- CENTER - PRODUCTS & SUGGESTIONS -->
+        <main class="products-main">
+            <!-- Suggestions strip -->
+            <div class="suggestions-strip">
+                <span class="suggestion-label">Suggestions for you:</span>
+                <div class="suggestion-items">
+                    <span class="suggestion-chip" data-search="Chole Bhature">Chole Bhature</span>
+                    <span class="suggestion-chip" data-search="Body Wash">Body Wash</span>
+                    <span class="suggestion-chip" data-search="Brownie">Brownie</span>
+                    <span class="suggestion-chip" data-search="Noodles">Noodles</span>
+                    <span class="suggestion-chip" data-search="Dosa">Dosa</span>
+                    <span class="suggestion-chip" data-search="Notebook">Notebook</span>
+                    <span class="suggestion-chip" data-search="Pasta">Pasta</span>
+                    <span class="suggestion-chip" data-search="Protein Roll">Protein Roll</span>
+                </div>
+            </div>
+
+            <!-- Products grid -->
+            <div id="productsSection" class="products-grid-container"></div>
+        </main>
+
+        <!-- RIGHT SIDEBAR - MY CART -->
+        <aside class="cart-sidebar">
+            <div class="cart-header">
+                <h3>My Cart</h3>
+                <span class="cart-count" id="cartItemCount">0</span>
+            </div>
+            
+            <div id="cartItemsContainer" class="cart-items-container">
+                <div class="empty-cart">
+                    <p>Your cart is empty</p>
+                    <small>Add items to get 10 min delivery</small>
+                </div>
+            </div>
+            
+            <div id="cartTotalContainer" style="display: none;">
+                <div class="cart-total">
+                    <span>Total</span>
+                    <span id="cartTotalPrice">₹0</span>
+                </div>
+                <div class="delivery-note" id="deliveryLocationNote">📍 Deliver to: Not selected</div>
+                <button class="checkout-btn">Checkout → 10 min delivery</button>
+            </div>
+        </aside>
+    </div>
+
+   <script src="{{ url_for('static', filename='swift_store.js') }}"></script>
+</body>
+</html>
