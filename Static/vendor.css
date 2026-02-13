@@ -5,6 +5,7 @@ body {
     color: white;
 }
 
+/* Container */
 .dashboard-container {
     width: 90%;
     max-width: 1200px;
@@ -12,6 +13,7 @@ body {
     padding: 40px 0;
 }
 
+/* Top Bar */
 .top-bar {
     display: flex;
     justify-content: space-between;
@@ -19,6 +21,22 @@ body {
     margin-bottom: 30px;
 }
 
+.brand h1 {
+    margin: 0;
+    font-size: 26px;
+    background: linear-gradient(90deg, #7c3aed, #f97316);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+
+.vendor-address {
+    font-size: 14px;
+    color: #94a3b8;
+}
+
+/* Logout Button */
 .logout-btn {
     background: linear-gradient(90deg, #7c3aed, #f97316);
     padding: 10px 25px;
@@ -26,8 +44,14 @@ body {
     text-decoration: none;
     color: white;
     font-weight: bold;
+    transition: 0.3s;
 }
 
+.logout-btn:hover {
+    transform: scale(1.05);
+}
+
+/* Cards */
 .card {
     background: #1e293b;
     padding: 30px;
@@ -36,6 +60,14 @@ body {
     box-shadow: 0 8px 20px rgba(0,0,0,0.4);
 }
 
+/* Headings */
+h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 22px;
+}
+
+/* Form */
 .product-form {
     display: grid;
     gap: 15px;
@@ -48,6 +80,11 @@ body {
     font-size: 14px;
 }
 
+.product-form input:focus {
+    outline: 2px solid #7c3aed;
+}
+
+/* Add Button */
 .add-btn {
     background: linear-gradient(90deg, #7c3aed, #f97316);
     padding: 12px;
@@ -56,14 +93,21 @@ body {
     color: white;
     font-weight: bold;
     cursor: pointer;
+    transition: 0.3s;
 }
 
+.add-btn:hover {
+    transform: translateY(-3px);
+}
+
+/* Product Grid */
 .product-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 20px;
 }
 
+/* Product Card */
 .product-card {
     background: #334155;
     padding: 15px;
@@ -83,15 +127,17 @@ body {
     border-radius: 8px;
 }
 
+/* Category */
 .category {
     display: inline-block;
     background: #7c3aed;
     padding: 4px 10px;
     border-radius: 15px;
     font-size: 12px;
-    margin: 5px 0;
+    margin: 8px 0;
 }
 
+/* Delete Button */
 .delete-btn {
     background: #ef4444;
     border: none;
@@ -99,17 +145,14 @@ body {
     border-radius: 6px;
     color: white;
     cursor: pointer;
-}
-.vendor-address {
-    color: #94a3b8;
-    font-size: 14px;
-    margin-top: -10px;
+    transition: 0.3s;
 }
 
-.location-card {
-    text-align: center;
+.delete-btn:hover {
+    background: #dc2626;
 }
 
+/* Location */
 .location-btn {
     margin-top: 10px;
     padding: 10px 20px;
@@ -123,7 +166,6 @@ body {
 
 .location-success {
     color: #22c55e;
-    font-weight: bold;
 }
 
 .location-warning {

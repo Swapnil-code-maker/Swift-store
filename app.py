@@ -67,8 +67,18 @@ def customer_dashboard():
     if "user_id" not in session or session.get("role") != "customer":
         return redirect(url_for("customer_login"))
 
+    customer = User.query.get(session["user_id"])
     vendors = User.query.filter_by(role="vendor").all()
-    return render_template("swift_store.html", vendors=vendors)
+
+    products = Product.query.all()
+
+    return render_template(
+        "swift_store.html",
+        vendors=vendors,
+        products=products,
+        customer=customer
+    )
+
 
 # ==================== VENDOR LOGIN ====================
 @app.route("/vendor-login", methods=["GET", "POST"])

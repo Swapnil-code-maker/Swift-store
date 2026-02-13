@@ -1,43 +1,54 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Vendor Dashboard</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
 
 <div class="dashboard-container">
 
+    <!-- TOP BAR -->
     <div class="top-bar">
-        <div>
-            <h1>🏪 {{ vendor.company_name or "Vendor Dashboard" }}</h1>
-            <p class="vendor-address">
-                {{ vendor.address or "Address not set" }}
-            </p>
+        <div class="brand">
+            <h1><i class="fa-solid fa-store"></i> Vendor Dashboard</h1>
+            {% if vendor.company_name %}
+                <p class="vendor-address">{{ vendor.company_name }}</p>
+            {% endif %}
         </div>
 
-        <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        <a href="{{ url_for('logout') }}" class="logout-btn">
+            <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </a>
     </div>
 
-    <!-- Location Section -->
+    <!-- LOCATION CARD -->
     <div class="card location-card">
-        <h3>Shop Location</h3>
+        <h2><i class="fa-solid fa-location-dot"></i> Shop Location</h2>
+
         {% if vendor.latitude and vendor.longitude %}
             <p class="location-success">
-                📍 Location Saved ({{ vendor.latitude }}, {{ vendor.longitude }})
+                Location Saved ✔  
+                ({{ vendor.latitude }}, {{ vendor.longitude }})
             </p>
         {% else %}
-            <p class="location-warning">Location not set</p>
+            <p class="location-warning">
+                Location not set yet.
+            </p>
         {% endif %}
 
         <button class="location-btn" onclick="getVendorLocation()">
-            Detect & Save My Shop Location
+            <i class="fa-solid fa-location-crosshairs"></i>
+            Set / Update Location
         </button>
     </div>
 
-    <!-- Add Product -->
+    <!-- ADD PRODUCT -->
     <div class="card">
-        <h2>Add New Product</h2>
+        <h2><i class="fa-solid fa-plus"></i> Add New Product</h2>
 
         <form method="POST" class="product-form">
             <input type="text" name="name" placeholder="Product Name" required>
@@ -45,13 +56,15 @@
             <input type="text" name="category" placeholder="Category (Snacks, Stationery...)" required>
             <input type="text" name="image" placeholder="Image URL" required>
 
-            <button type="submit" class="add-btn">Add Product</button>
+            <button type="submit" class="add-btn">
+                <i class="fa-solid fa-circle-plus"></i> Add Product
+            </button>
         </form>
     </div>
 
-    <!-- Product List -->
+    <!-- PRODUCTS -->
     <div class="card">
-        <h2>Your Products</h2>
+        <h2><i class="fa-solid fa-box"></i> Your Products</h2>
 
         <div class="product-grid">
             {% for product in products %}
@@ -62,7 +75,9 @@
                 <span class="category">{{ product.category }}</span>
 
                 <form action="{{ url_for('delete_product', product_id=product.id) }}" method="POST">
-                    <button class="delete-btn">Delete</button>
+                    <button class="delete-btn">
+                        <i class="fa-solid fa-trash"></i> Delete
+                    </button>
                 </form>
             </div>
             {% endfor %}
@@ -73,23 +88,34 @@
 
 <script>
 function getVendorLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-            fetch("/save-vendor-location", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude
-                })
-            }).then(() => {
-                alert("Shop location saved!");
-                location.reload();
-            });
-        });
-    } else {
-        alert("Geolocation not supported.");
+    if (!navigator.geolocation) {
+        alert("Geolocation not supported");
+        return;
     }
+
+    navigator.geolocation.getCurrentPosition(function(position) {
+        fetch("/save-vendor-location", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("Location saved successfully!");
+                location.reload();
+            } else {
+                alert("Error saving location.");
+            }
+        });
+    }, function() {
+        alert("Permission denied or location unavailable.");
+    });
 }
 </script>
 
