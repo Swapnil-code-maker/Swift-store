@@ -1,10 +1,13 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
+import math
+import requests
+import os
 
 # -------------------- APP INIT --------------------
 app = Flask(__name__)
-app.secret_key = "supersecretkey"
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 
 # -------------------- DATABASE CONFIG --------------------
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
@@ -13,7 +16,49 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 
-# -------------------- USER MODEL --------------------
+# -------------------- GLOBAL CACHE --------------------
+reverse_geocode_cache = {}
+
+# -------------------- DISTANCE FUNCTION --------------------
+def calculate_distance(lat1, lon1, lat2, lon2):
+    R = 6371  # km
+
+    lat1 = math.radians(lat1)
+    lon1 = math.radians(lon1)
+    lat2 = math.radians(lat2)
+    lon2 = math.radians(lon2)
+
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+
+    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+
+    return R * c
+
+# -------------------- REVERSE GEOCODING --------------------
+def get_address_from_coordinates(lat, lon):
+    key = f"{round(lat, 4)}_{round(lon, 4)}"
+
+    if key in reverse_geocode_cache:
+        return reverse_geocode_cache[key]
+
+    try:
+        url = f"https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lon}&format=json"
+        response = requests.get(
+            url,
+            headers={"User-Agent": "swiftstore-app"},
+            timeout=5
+        )
+        data = response.json()
+        address = data.get("display_name", "Address not found")
+    except:
+        address = "Address lookup failed"
+
+    reverse_geocode_cache[key] = address
+    return address
+
+# -------------------- MODELS --------------------
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -27,7 +72,6 @@ class User(db.Model):
 
     products = db.relationship('Product', backref='vendor', lazy=True)
 
-# -------------------- PRODUCT MODEL --------------------
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
@@ -42,7 +86,7 @@ class Product(db.Model):
 def entry():
     return render_template("entry.html")
 
-# ==================== CUSTOMER LOGIN ====================
+# -------------------- CUSTOMER LOGIN --------------------
 @app.route("/customer-login", methods=["GET", "POST"])
 def customer_login():
     if request.method == "POST":
@@ -61,26 +105,75 @@ def customer_login():
 
     return render_template("customer_login.html")
 
-# ==================== CUSTOMER DASHBOARD ====================
+# -------------------- CUSTOMER DASHBOARD --------------------
 @app.route("/customer-dashboard")
 def customer_dashboard():
+
     if "user_id" not in session or session.get("role") != "customer":
         return redirect(url_for("customer_login"))
 
     customer = User.query.get(session["user_id"])
-    vendors = User.query.filter_by(role="vendor").all()
-
     products = Product.query.all()
+
+    enriched_products = []
+
+    for product in products:
+        vendor = product.vendor
+
+        if (
+            customer.latitude is not None and
+            customer.longitude is not None and
+            vendor.latitude is not None and
+            vendor.longitude is not None
+        ):
+            distance = calculate_distance(
+                customer.latitude,
+                customer.longitude,
+                vendor.latitude,
+                vendor.longitude
+            )
+        else:
+            distance = 9999
+
+        enriched_products.append({
+            "id": product.id,
+            "name": product.name,
+            "price": product.price,
+            "category": product.category,
+            "image": product.image,
+            "vendor_name": vendor.company_name,
+            "vendor_address": vendor.address,
+            "distance": round(distance, 2)
+        })
+
+    enriched_products.sort(key=lambda x: x["distance"])
 
     return render_template(
         "swift_store.html",
-        vendors=vendors,
-        products=products,
+        products=enriched_products,
         customer=customer
     )
 
+# -------------------- SAVE CUSTOMER LOCATION --------------------
+@app.route("/save-customer-location", methods=["POST"])
+def save_customer_location():
+    if "user_id" not in session:
+        return jsonify({"error": "Not logged in"}), 403
 
-# ==================== VENDOR LOGIN ====================
+    customer = User.query.get(session["user_id"])
+    data = request.get_json()
+
+    customer.latitude = data["latitude"]
+    customer.longitude = data["longitude"]
+    customer.address = get_address_from_coordinates(
+        customer.latitude,
+        customer.longitude
+    )
+
+    db.session.commit()
+    return jsonify({"success": True})
+
+# -------------------- VENDOR LOGIN --------------------
 @app.route("/vendor-login", methods=["GET", "POST"])
 def vendor_login():
     if request.method == "POST":
@@ -99,42 +192,31 @@ def vendor_login():
 
     return render_template("vendor_login.html")
 
-# ==================== VENDOR DASHBOARD ====================
+# -------------------- VENDOR DASHBOARD --------------------
 @app.route("/vendor-dashboard", methods=["GET", "POST"])
 def vendor_dashboard():
+
     if "user_id" not in session or session.get("role") != "vendor":
         return redirect(url_for("vendor_login"))
 
     vendor = User.query.get(session["user_id"])
 
     if request.method == "POST":
-        name = request.form["name"]
-        price = request.form["price"]
-        category = request.form["category"]
-        image = request.form["image"]
-
         new_product = Product(
-            name=name,
-            price=float(price),
-            category=category,
-            image=image,
+            name=request.form["name"],
+            price=float(request.form["price"]),
+            category=request.form["category"],
+            image=request.form["image"],
             vendor_id=vendor.id
         )
-
         db.session.add(new_product)
         db.session.commit()
-
         return redirect(url_for("vendor_dashboard"))
 
     products = Product.query.filter_by(vendor_id=vendor.id).all()
+    return render_template("vendor_dashboard.html", products=products, vendor=vendor)
 
-    return render_template(
-        "vendor_dashboard.html",
-        products=products,
-        vendor=vendor
-    )
-
-# ==================== SAVE VENDOR LOCATION ====================
+# -------------------- SAVE VENDOR LOCATION --------------------
 @app.route("/save-vendor-location", methods=["POST"])
 def save_vendor_location():
     if "user_id" not in session:
@@ -145,61 +227,58 @@ def save_vendor_location():
 
     vendor.latitude = data["latitude"]
     vendor.longitude = data["longitude"]
+    vendor.address = get_address_from_coordinates(
+        vendor.latitude,
+        vendor.longitude
+    )
 
     db.session.commit()
-
     return jsonify({"success": True})
 
-# ==================== DELETE PRODUCT ====================
-@app.route("/delete-product/<int:product_id>", methods=["POST"])
-def delete_product(product_id):
-    if "user_id" not in session:
-        return redirect(url_for("vendor_login"))
+# -------------------- NEARBY VENDORS --------------------
+@app.route("/nearby-vendors")
+def nearby_vendors():
 
-    product = Product.query.get_or_404(product_id)
+    if "user_id" not in session or session.get("role") != "customer":
+        return redirect(url_for("customer_login"))
 
-    if product.vendor_id != session["user_id"]:
-        return redirect(url_for("vendor_dashboard"))
+    customer = User.query.get(session["user_id"])
 
-    db.session.delete(product)
-    db.session.commit()
+    if customer.latitude is None or customer.longitude is None:
+        return "Customer location not set."
 
-    return redirect(url_for("vendor_dashboard"))
+    vendors = User.query.filter_by(role="vendor").all()
+    nearby_list = []
 
-# ==================== DELIVERY LOGIN ====================
-@app.route("/delivery-login", methods=["GET", "POST"])
-def delivery_login():
-    if request.method == "POST":
-        email = request.form["email"]
-        password = request.form["password"]
+    for vendor in vendors:
+        if vendor.latitude is not None and vendor.longitude is not None:
+            distance = calculate_distance(
+                customer.latitude,
+                customer.longitude,
+                vendor.latitude,
+                vendor.longitude
+            )
 
-        user = User.query.filter_by(email=email, role="delivery").first()
+            if distance <= 5:
+                nearby_list.append({
+                    "company_name": vendor.company_name,
+                    "address": vendor.address,
+                    "latitude": vendor.latitude,
+                    "longitude": vendor.longitude,
+                    "distance": round(distance, 2)
+                })
 
-        if user and bcrypt.check_password_hash(user.password, password):
-            session["user_id"] = user.id
-            session["role"] = user.role
-            return redirect(url_for("delivery_dashboard"))
+    nearby_list.sort(key=lambda x: x["distance"])
 
-        flash("Invalid credentials!")
-        return redirect(url_for("delivery_login"))
+    return render_template("nearby_vendors.html", vendors=nearby_list)
 
-    return render_template("delivery_login.html")
-
-# ==================== DELIVERY DASHBOARD ====================
-@app.route("/delivery-dashboard")
-def delivery_dashboard():
-    if "user_id" not in session or session.get("role") != "delivery":
-        return redirect(url_for("delivery_login"))
-
-    return "<h2>Delivery Dashboard (Coming Soon)</h2>"
-
-# ==================== LOGOUT ====================
+# -------------------- LOGOUT --------------------
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("entry"))
 
-# ==================== REGISTER ====================
+# -------------------- REGISTER --------------------
 @app.route("/register/<role>", methods=["GET", "POST"])
 def register(role):
     if request.method == "POST":
@@ -213,16 +292,12 @@ def register(role):
 
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
-        # If vendor, allow company fields
-        company_name = request.form.get("company_name")
-        address = request.form.get("address")
-
         new_user = User(
             email=email,
             password=hashed_password,
             role=role,
-            company_name=company_name,
-            address=address
+            company_name=request.form.get("company_name"),
+            address=request.form.get("address")
         )
 
         db.session.add(new_user)
@@ -233,7 +308,7 @@ def register(role):
 
     return render_template("register.html", role=role)
 
-# ==================== RUN ====================
+# -------------------- RUN --------------------
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()

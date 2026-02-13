@@ -15,6 +15,11 @@
         <div class="brand-wrapper">
             <span class="brand-gradient">Swift Store</span>
             <span class="delivery-tagline">Delivery in 10 minutes</span>
+           <a href="{{ url_for('nearby_vendors') }}" class="nearby-btn">
+    📍 View Nearby Vendors
+</a>
+
+
         </div>
     </div>
 </header>
@@ -38,16 +43,25 @@
     <!-- CENTER PRODUCTS -->
     <main class="products-main">
         <div class="products-grid-container">
-    {% for product in products %}
-    <div class="product-card">
-        <img src="{{ product.image }}">
-        <h3>{{ product.name }}</h3>
-        <p>₹{{ product.price }}</p>
-        <span>{{ product.category }}</span>
-        <p><small>{{ product.vendor.company_name }}</small></p>
-    </div>
-    {% endfor %}
- </div>
+   {% for product in products %}
+<div class="product-card">
+    <img src="{{ product.image }}">
+    <h3>{{ product.name }}</h3>
+
+    <p>₹{{ product.price }}</p>
+
+    <span class="category">{{ product.category }}</span>
+
+    <p class="vendor-name">
+        🏪 {{ product.vendor_name }}
+    </p>
+
+    <p class="distance">
+        📍 {{ product.distance }} km away
+    </p>
+</div>
+{% endfor %}
+
 
     </main>
 
